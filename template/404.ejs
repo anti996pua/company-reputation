@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('site.title') %> — 404</title>
+    <meta name="description" content="<%= __('site.description') %>">
+    <link rel="icon" type="image/svg+xml" href="<%= basePath %>img/project/favicon.svg">
+    <link rel="alternate icon" href="<%= basePath %>img/project/favicon.ico">
+    <link rel="stylesheet" href="<%= basePath %>css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="<%= basePath %>index.html" class="logo"><%= __('site.shortName') %></a>
+            <nav>
+                <a href="<%= basePath %>index.html" data-i18n="nav.home">首页</a>
+                <a href="<%= basePath %>list.html" data-i18n="nav.search">搜索</a>
+                <a href="<%= basePath %>compare.html" data-i18n="nav.compare">对比</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="min-height:60vh;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;max-width:480px;">
+            <h1 style="font-size:5rem;margin:0;color:var(--color-primary);font-weight:800;">404</h1>
+            <p style="font-size:1.2rem;margin:1.5rem 0;color:var(--color-muted);">
+                <%= __('search.noResults', { query: '' }).replace(': ""', '') %>
+            </p>
+            <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+                <a href="<%= basePath %>index.html" class="btn btn-primary"><%= __('nav.home') %></a>
+                <a href="<%= basePath %>list.html" class="btn btn-secondary"><%= __('nav.search') %></a>
+            </div>
+        </div>
+    </main>
+
+    <footer style="text-align:center;padding:2rem;color:var(--color-muted);font-size:0.9rem;">
+        <p><%= __('site.footer') %></p>
+    </footer>
+
+    <script src="<%= basePath %>js/i18n.js"></script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('compare.title') %> - <%= __('site.title') %></title>
+    <meta name="description" content="<%= __('meta.compare') %>">
+    <link rel="icon" type="image/svg+xml" href="<%= basePath %>/img/project/favicon.svg">
+    <link rel="alternate icon" href="<%= basePath %>/img/project/favicon.ico">
+    <link rel="stylesheet" href="<%= basePath %>/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="<%= basePath %>/index.html" class="logo"><%= __('site.title') %></a>
+            <nav>
+                <a href="<%= basePath %>/index.html" data-i18n="nav.home">首页</a>
+                <a href="<%= basePath %>/list.html" data-i18n="nav.search">搜索</a>
+                <a href="<%= basePath %>/compare.html" data-i18n="nav.compare">🔀 对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="breadcrumb">
+            <a href="<%= basePath %>/index.html"><%= __('nav.home') %></a>
+            <span class="breadcrumb-sep">›</span>
+            <span data-i18n="compare.title">公司对比</span>
+        </div>
+
+        <div class="compare-intro">
+            <span data-i18n="compare.intro">🔀 最多选 4 家公司，横向对比综合评分、各维度指标和招聘职位。</span>
+            <br><span data-i18n="compare.intro2">在任意公司页面点击「🔀 对比」即可加入此处；也可在下方搜索框中添加。</span>
+        </div>
+
+        <div class="compare-controls">
+            <div class="compare-suggest">
+                <input type="text" class="compare-input" id="compareInput" placeholder="<%= __('compare.placeholder') %>" data-i18n="compare.placeholder" autocomplete="off">
+                <div class="compare-suggest-list" id="compareSuggest"></div>
+            </div>
+            <button class="compare-input" onclick="compareClear()" style="cursor:pointer;flex:0 0 auto;background:var(--color-danger);color:#fff;border-color:var(--color-danger);" data-i18n="compare.clear">🗑️ 清空</button>
+        </div>
+
+        <div id="compareTable" class="compare-table"></div>
+    </main>
+
+    <div class="contribute-bar">
+        <a href="<%= basePath %>/c/贡献指南.html" class="contribute-link"><%= __('contribute.title') %></a>
+        <span class="contribute-desc"><%= __('contribute.desc') %></span>
+    </div>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+            <% if (config.repoUrl) { %>
+            <p class="footer-source"><a href="<%= config.repoUrl %>" target="_blank" rel="noopener"><img src="<%= basePath %>/img/project/icon.svg" alt="" class="footer-icon"><%= __('site.shortName') %></a></p>
+            <% } %>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="<%= basePath %>/js/data.js"></script>
+    <script src="<%= basePath %>/js/i18n.js"></script>
+    <script src="<%= basePath %>/js/main.js"></script>
+    <script>
+    var COMPARE_KEY = 'company-compare';
+    var MAX_COMPARE = 4;
+    var compareList = JSON.parse(localStorage.getItem(COMPARE_KEY) || '[]');
+    function escAttr(s) { return String(s).replace(/'/g, "\\'"); }
+
+    function showToast(msg) {
+      var container = document.getElementById('toastContainer');
+      if (!container) return;
+      var el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(function() { el.classList.add('toast-out'); }, 2000);
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+    }
+
+    function compareAdd(name) {
+        if (compareList.indexOf(name) >= 0) { showToast(name + ' ' + (__('compare.alreadyAdded') || '已在对比列表中')); return; }
+        if (compareList.length >= MAX_COMPARE) {
+            showToast(__('compare.max', {max: MAX_COMPARE}) || '最多只能对比 ' + MAX_COMPARE + ' 家公司');
+            return;
+        }
+        compareList.push(name);
+        localStorage.setItem(COMPARE_KEY, JSON.stringify(compareList));
+        renderCompare();
+        showToast(name + ' ' + (__('compare.added') || '已加入对比'));
+    }
+    function compareRemove(name) {
+        compareList = compareList.filter(function(n) { return n !== name; });
+        localStorage.setItem(COMPARE_KEY, JSON.stringify(compareList));
+        renderCompare();
+        showToast(name + ' ' + (__('compare.removed') || '已移除'));
+    }
+    function compareClear() {
+        compareList = [];
+        localStorage.setItem(COMPARE_KEY, '[]');
+        renderCompare();
+        showToast(__('compare.cleared') || '已清空所有公司');
+    }
+
+    function renderCompare() {
+        var table = document.getElementById('compareTable');
+        if (compareList.length === 0) {
+            table.innerHTML = '<div class="compare-empty">' + (__('compare.empty') || '还没有选公司') + '</div>';
+            return;
+        }
+        var data = (typeof ALL_DATA !== 'undefined') ? ALL_DATA : (window.ALL_DATA || []);
+        if (!data || data.length === 0) {
+            table.innerHTML = '<div class="compare-empty">' + (__('compare.loading') || '数据加载中...') + '</div>';
+            return;
+        }
+    window._compareRetry = window._compareRetry || 0;
+    var picked = compareList.map(function(name) {
+        return data.find(function(d) { return d.fullName === name || d.name === name || d.n === name; });
+    }).filter(Boolean);
+
+    if (picked.length !== compareList.length && window._compareRetry < 20) {
+        window._compareRetry++;
+        setTimeout(renderCompare, 100);
+        return;
+    }
+    window._compareRetry = 0;
+
+        var rows = [
+            {label: __('compare.label.company'), getValue: function(c) { return '<a href="' + c.url + '">' + c.fullName + '</a><br><a href="javascript:void(0)" onclick="compareRemove(\'' + escAttr(c.fullName) + '\')" style="color:var(--color-danger);font-size:12px;">' + (__('compare.remove') || '✕ 移除') + '</a>'; }, isHeader: true},
+            {label: __('compare.label.overallRating'), getValue: function(c) { return c.avgRating > 0 ? '<div class="compare-cell-rating">' + c.avgRating.toFixed(1) + '</div><div style="font-size:12px;color:var(--color-text-secondary);">/5.0</div>' : '—'; }},
+            {label: __('compare.label.industry'), getValue: function(c) { return c.industry || '—'; }},
+            {label: __('compare.label.city'), getValue: function(c) { return c.city || '—'; }},
+            {label: __('compare.label.scale'), getValue: function(c) { return c.scale || '—'; }},
+            {label: __('compare.label.established'), getValue: function(c) { return c.establishedYear || '—'; }},
+            {label: __('compare.label.nine996'), getValue: function(c) { return c.metrics && c.metrics.workIntensity > 0 ? c.metrics.workIntensity.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.overtimeFreq'), getValue: function(c) { return c.metrics && c.metrics.overtimeFreq > 0 ? c.metrics.overtimeFreq.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.salaryLevel'), getValue: function(c) { return c.metrics && c.metrics.salaryLevel > 0 ? c.metrics.salaryLevel.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.benefits'), getValue: function(c) { return c.metrics && c.metrics.benefitsScore > 0 ? c.metrics.benefitsScore.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.wlb'), getValue: function(c) { return c.metrics && c.metrics.wlbScore > 0 ? c.metrics.wlbScore.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.careerGrowth'), getValue: function(c) { return c.metrics && c.metrics.careerGrowth > 0 ? c.metrics.careerGrowth.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.workEnv'), getValue: function(c) { return c.metrics && c.metrics.workEnv > 0 ? c.metrics.workEnv.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.culture'), getValue: function(c) { return c.metrics && c.metrics.cultureScore > 0 ? c.metrics.cultureScore.toFixed(1) + '/5' : '—'; }},
+            {label: __('compare.label.positionCount'), getValue: function(c) { return (__('compare.positionsCount', {count: c.positionCount || 0}) || (c.positionCount || 0) + ' 个职位'); }},
+        ];
+        var html = '';
+        rows.forEach(function(r) {
+            html += '<div class="compare-row"><div class="compare-label">' + r.label + '</div><div class="compare-cells">';
+            picked.forEach(function(c) {
+                var v = r.getValue(c);
+                var isHead = r.isHeader ? ' font-weight:600;' : '';
+                html += '<div class="compare-cell" style="' + isHead + '">' + v + '</div>';
+            });
+            html += '</div></div>';
+        });
+        table.innerHTML = html;
+    }
+
+    var compareInput = document.getElementById('compareInput');
+    var compareSuggest = document.getElementById('compareSuggest');
+    compareInput.addEventListener('input', function() {
+        var q = this.value.trim().toLowerCase();
+        if (!q) { compareSuggest.style.display = 'none'; return; }
+        var data = (typeof ALL_DATA !== 'undefined') ? ALL_DATA : (window.ALL_DATA || []);
+        var matches = data.filter(function(d) { return d.depth === 0 && d.fullName.toLowerCase().indexOf(q) >= 0; }).slice(0, 10);
+        if (matches.length === 0) { compareSuggest.style.display = 'none'; return; }
+        compareSuggest.innerHTML = matches.map(function(m) {
+            return '<a href="javascript:void(0)" onclick="compareAdd(\'' + escAttr(m.fullName) + '\');document.getElementById(\'compareInput\').value=\'\';document.getElementById(\'compareSuggest\').style.display=\'none\';">' + m.fullName + ' <span style="color:var(--color-text-secondary);font-size:12px;">' + (m.industry || '') + '</span></a>';
+        }).join('');
+        compareSuggest.style.display = 'block';
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.compare-suggest') && !e.target.closest('#compareInput')) {
+            compareSuggest.style.display = 'none';
+        }
+    });
+
+    var qs = new URLSearchParams(window.location.search).get('q');
+    if (qs) {
+        var names = qs.split(',').map(function(s) { return decodeURIComponent(s.trim()); });
+        names.forEach(function(n) { compareAdd(n); });
+    }
+
+    function init() {
+        if ((typeof ALL_DATA !== 'undefined' && ALL_DATA.length > 0) || (window.ALL_DATA && window.ALL_DATA.length > 0)) {
+            renderCompare();
+        } else {
+            setTimeout(init, 50);
+        }
+    }
+    init();
+
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+    </script>
+</body>
+</html>

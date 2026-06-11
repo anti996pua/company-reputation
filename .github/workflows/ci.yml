@@ -1,0 +1,109 @@
+# CI — 三分支差异化检查
+#
+# 分支策略：
+#   develop → 功能开发，仅构建验证
+#   data    → 数据贡献，构建 + 数据校验 + 文件类型检查
+#   main    → 生产部署，构建 + 数据校验 + 全量验证
+
+name: CI
+
+on:
+  push:
+    branches: [develop, data, main]
+  pull_request:
+    branches: [develop, data, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package.json
+
+      - run: npm install
+
+      - run: npm run build
+
+      - name: Unit tests
+        run: npm run test:parser
+
+      - name: Start preview server for e2e tests
+        run: |
+          cd dist && python3 -m http.server 8080 &
+          sleep 2
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Verify dist output
+        run: |
+          test -d dist
+          test -f dist/index.html
+          echo "Pages: $(find dist -name '*.html' | wc -l)"
+
+  validate-data:
+    needs: build
+    if: github.ref_name == 'data' || github.base_ref == 'data'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package.json
+
+      - run: npm install
+
+      - name: Validate data files
+        run: node scripts/validate-data.mjs
+
+      - name: Check only companies/ changed (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD)
+          NON_DATA=$(echo "$CHANGED" | grep -v '^companies/' || true)
+          if [ -n "$NON_DATA" ]; then
+            echo "❌ PR 包含 companies/ 以外的文件修改："
+            echo "$NON_DATA"
+            exit 1
+          fi
+          echo "✅ 仅 companies/ 目录有变更"
+
+  full-validation:
+    needs: build
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package.json
+
+      - run: npm install
+
+      - name: Validate data files
+        run: node scripts/validate-data.mjs
+
+      - name: Full dist validation
+        run: |
+          test -f dist/index.html
+          test -f dist/list.html
+          test -f dist/compare.html
+          echo "✅ 关键页面存在"
+          echo "Pages: $(find dist -name '*.html' | wc -l)"
