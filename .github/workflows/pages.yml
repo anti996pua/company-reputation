@@ -42,7 +42,7 @@ jobs:
           test -f dist/compare.html
           echo "Pages: $(find dist -name '*.html' | wc -l)"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
