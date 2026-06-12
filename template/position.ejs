@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= position.fullName %> - <%= position.parentName %> - <%= __('site.title') %></title>
+    <meta name="description" content="<%= __('meta.position', {position: position.fullName, dept: position.parentName}) %>">
+    <link rel="icon" type="image/svg+xml" href="<%= basePath %>/img/project/favicon.svg">
+    <link rel="alternate icon" href="<%= basePath %>/img/project/favicon.ico">
+    <link rel="stylesheet" href="<%= basePath %>/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="<%= basePath %>/index.html" class="logo"><%= __('site.title') %></a>
+            <nav>
+                <a href="<%= basePath %>/index.html" data-i18n="nav.home">首页</a>
+                <a href="<%= basePath %>/list.html" data-i18n="nav.search">搜索</a>
+                <a href="<%= basePath %>/compare.html" data-i18n="nav.compare">🔀 对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="breadcrumb">
+            <a href="<%= basePath %>/index.html"><%= __('nav.home') %></a>
+            <% for (var i = 0; i < position.pathSegments.length - 1; i++) {
+              var segs = [];
+              for (var j = 0; j <= i; j++) segs.push(encodeURIComponent(position.pathSegments[j]));
+            %>
+            <span class="breadcrumb-sep">›</span>
+            <a href="<%= basePath %>/c/<%= segs.join('/') %>.html"><%= position.pathSegments[i] %></a>
+            <% } %>
+            <span class="breadcrumb-sep">›</span>
+            <span><%= position.pathSegments[position.pathSegments.length - 1] %></span>
+        </div>
+
+        <section class="position-hero">
+            <div class="position-header">
+                <div>
+                    <h1><%= position.fullName %></h1>
+                    <a href="<%= basePath %>/compare.html?q=<%= encodeURIComponent(position.fullName) %>" class="compare-btn" title="<%= __('compare.addToCompare') %>">🔀 <%= __('compare.addToCompare') %></a>
+                    <a href="<%= position.sourceUrl %>" target="_blank" class="source-link" title="<%= __('company.edit') %>">✏️</a>
+                    <p class="position-meta">
+                        <span class="position-cat">📁 <%= position.positionCategory %></span>
+                        <span class="position-level">📊 <%= position.levelRange %></span>
+                        <span class="position-loc">📍 <%= position.workLocation %></span>
+                    </p>
+                    <% if (position.tags && position.tags.length > 0) { %>
+                    <div class="tag-list">
+                        <% position.tags.forEach(function(t) { %>
+                        <a href="<%= basePath %>/list.html?tag=<%= encodeURIComponent(t) %>" class="tag-item"><%= t %></a>
+                        <% }); %>
+                    </div>
+                    <% } %>
+                    <% if (parentDept) { %>
+                    <a href="<%= basePath %>/c/<%= position.pathSegments.slice(0, -1).map(s => encodeURIComponent(s)).join('/') %>.html" class="position-dept-link">
+                        🏢 <%= position.parentName %>
+                        <% if (parentDept.avgRating > 0) { %>
+                        <span class="rating-badge"><%= parentDept.avgRating.toFixed(1) %></span>
+                        <% } %>
+                    </a>
+                    <% } %>
+                </div>
+            </div>
+            <% if (position.jobDescription) { %>
+            <% var jobDesc = position.jobDescription.split('\n').filter(function(l) {
+                 return !/^(类别|职级范围|工作地点|类似职位)\s*[：:]/.test(l.trim());
+               }).join('\n').trim(); %>
+            <% if (jobDesc) { %>
+            <div class="position-desc"><%= jobDesc %></div>
+            <% } %>
+            <% } %>
+        </section>
+
+        <% if (position.images && position.images.length > 0) { %>
+        <section class="section images-section">
+            <h2 class="section-title"><%= __('section.images.position') %></h2>
+            <div class="image-gallery">
+                <% position.images.forEach(function(img) { %>
+                <img src="<%= position.entityImgBase %><%= img %>" alt="" class="entity-image" loading="lazy">
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (position.salaryRanges.length > 0) { %>
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.salary">💰 薪资范围</h2>
+            <div class="salary-table">
+                <% position.salaryRanges.forEach(function(s) { %>
+                <div class="salary-row">
+                    <span class="salary-level"><%= s.level %></span>
+                    <span class="salary-amount"><%= s.salary %></span>
+                </div>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (position.techStack.length > 0) { %>
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.techStack">🛠️ 技术栈</h2>
+            <div class="tag-list">
+                <% position.techStack.forEach(function(t) { %>
+                <span class="tag-item"><%= t %></span>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (position.requirements.length > 0) { %>
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.requirements">📋 技能要求</h2>
+            <ul class="requirement-list">
+                <% position.requirements.forEach(function(r) { %>
+                <li><%= r %></li>
+                <% }); %>
+            </ul>
+        </section>
+        <% } %>
+
+        <% if (position.interviewProcess.length > 0) { %>
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.interview">🎯 面试流程</h2>
+            <div class="interview-list">
+                <% position.interviewProcess.forEach(function(step, idx) { %>
+                <div class="interview-step">
+                    <span class="step-num"><%= idx + 1 %></span>
+                    <span class="step-text"><%= step %></span>
+                </div>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (position.similarPositionsResolved && position.similarPositionsResolved.length > 0) { %>
+        <section class="section similar-section">
+                <h2 class="section-title" data-i18n="section.similarPositions">🔀 类似职位（跳槽参考）</h2>
+            <p class="similar-hint"><%= __('position.similarHint', {position: position.fullName}) %></p>
+            <div class="dept-grid">
+                <% position.similarPositionsResolved.forEach(function(sp) { %>
+                <div class="dept-card">
+                    <a href="<%= sp.url %>" class="dept-card-link">
+                        <div class="dept-card-header">
+                            <span class="dept-name"><%= sp.title %></span>
+                        </div>
+                        <div class="dept-meta">
+                            <span>🏢 <%= sp.companyName %></span>
+                            <span><%= sp.deptName %></span>
+                        </div>
+                    </a>
+                </div>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (config.giscus && config.giscus.repo) { %>
+        <section class="section giscus-section">
+            <h2 class="section-title" data-i18n="section.discuss">💬 讨论区</h2>
+            <div class="giscus"><p class="giscus-loading" data-i18n="giscus.loading"></p></div>
+            <script>
+            (function() {
+              var gl = localStorage.getItem('company-lang');
+              if (!gl) {
+                var b = (navigator.language || navigator.browserLanguage || '').toLowerCase();
+                if (b === 'zh-tw' || b === 'zh-hk' || b === 'zh-mo') gl = 'zh-TW';
+                else if (b.indexOf('zh') === 0) gl = 'zh-CN';
+                else if (b.indexOf('en') === 0) gl = 'en';
+                else if (b.indexOf('ja') === 0) gl = 'ja';
+                else if (b.indexOf('ko') === 0) gl = 'ko';
+                else if (b.indexOf('fr') === 0) gl = 'fr';
+                else if (b.indexOf('de') === 0) gl = 'de';
+                else if (b.indexOf('es') === 0) gl = 'es';
+                else if (b.indexOf('pt') === 0) gl = 'pt';
+                else if (b.indexOf('ru') === 0) gl = 'ru';
+                else gl = 'zh-CN';
+              }
+              var gt = localStorage.getItem('company-theme');
+              if (!gt) gt = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+              var s = document.createElement('script');
+              s.src = 'https://giscus.app/client.js';
+              s.setAttribute('data-repo', '<%= config.giscus.repo %>');
+              s.setAttribute('data-repo-id', '<%= config.giscus.repoId %>');
+              s.setAttribute('data-category', '<%= config.giscus.category %>');
+              s.setAttribute('data-category-id', '<%= config.giscus.categoryId %>');
+              s.setAttribute('data-mapping', 'pathname');
+              s.setAttribute('data-strict', '0');
+              s.setAttribute('data-reactions-enabled', '1');
+              s.setAttribute('data-emit-metadata', '0');
+              s.setAttribute('data-input-position', 'bottom');
+              s.setAttribute('data-theme', gt);
+              s.setAttribute('data-lang', gl);
+              s.setAttribute('crossorigin', 'anonymous');
+              s.async = true;
+              document.querySelector('.giscus').appendChild(s);
+            })();
+            </script>
+        </section>
+        <% } %>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+            <% if (config.repoUrl) { %>
+            <p class="footer-source"><a href="<%= config.repoUrl %>" target="_blank" rel="noopener"><img src="<%= basePath %>/img/project/icon.svg" alt="" class="footer-icon"><%= __('site.shortName') %></a></p>
+            <% } %>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="contribute-bar">
+        <a href="<%= basePath %>/c/贡献指南.html" class="contribute-link"><%= __('contribute.title') %></a>
+        <span class="contribute-desc"><%= __('contribute.desc') %></span>
+    </div>
+
+    <script src="<%= basePath %>/js/data.js"></script>
+    <script src="<%= basePath %>/js/i18n.js"></script>
+    <script src="<%= basePath %>/js/main.js"></script>
+    <script>
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+    </script>
+</body>
+</html>

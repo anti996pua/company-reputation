@@ -1,0 +1,25 @@
+{
+  "name": "company-reputation",
+  "version": "1.0.0",
+  "description": "公司信誉查询系统 — 静态站点构建",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "node scripts/test-parser.mjs && node scripts/e2e-test.mjs",
+    "test:browser": "node scripts/test-browser.mjs",
+    "test:parser": "node scripts/test-parser.mjs",
+    "test:e2e": "node scripts/e2e-test.mjs"
+  },
+  "dependencies": {
+    "ejs": "~3.1.6",
+    "fs-extra": "~10.1.0",
+    "uglify-js": "~3.17.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "ws": "^8.21.0"
+  }
+}

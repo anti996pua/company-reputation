@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+package-lock.json
+.DS_Store
+__pycache__
+*.pyc
+.env
+dist/
+uploads/
+.github-account
+*.token
+
+# opencode 自动生成
+.opencode/opencode.json
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json

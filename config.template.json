@@ -1,0 +1,60 @@
+{
+  "_comment": "公司信誉查询系统 — 全局配置模板",
+  "siteName": {
+    "zh-CN": "公司信誉查询系统",
+    "zh-TW": "公司信譽查詢系統",
+    "en": "Company Reputation Checker",
+    "ja": "企業信誉照会システム",
+    "ko": "기업 평판 조회",
+    "fr": "Vérification de Réputation d'Entreprise",
+    "de": "Unternehmensreputation-Prüfung",
+    "es": "Verificador de Reputación Empresarial",
+    "pt": "Verificador de Reputação Empresarial",
+    "ru": "Проверка репутации компании"
+  },
+  "_siteNameNote": "每个语言可自定义站点名称；未填写的语言默认使用 i18n 文件中已有的翻译，不覆盖",
+  "shortName": {
+    "zh-CN": "公司信誉",
+    "zh-TW": "公司信譽",
+    "en": "CR",
+    "ja": "企業信誉",
+    "ko": "기업 평판",
+    "fr": "Réputation",
+    "de": "Reputation",
+    "es": "Reputación",
+    "pt": "Reputação",
+    "ru": "Репутация"
+  },
+  "_shortNameNote": "项目简称，显示在页脚图标旁",
+  "repoUrl": "https://github.com/anti996pua/company-reputation",
+  "sourceBase": "https://github.com/anti996pua/company-reputation/tree/${BRANCH}",
+  "_sourceBaseNote": "默认指向 data 分支（用户贡献分支），CI 构建 main 时通过 BRANCH=data 环境变量覆盖",
+  "giscus": {
+    "_note": "Giscus 评论系统配置，留空则禁用评论区。详见 https://giscus.app",
+    "repo": "",
+    "repoId": "",
+    "category": "",
+    "categoryId": ""
+  },
+  "devServer": {
+    "host": "127.0.0.1",
+    "port": 8080
+  },
+  "branches": {
+    "develop": {
+      "description": "开发分支 — 功能开发与Bug修复",
+      "allowedChanges": "all",
+      "deployTarget": "none"
+    },
+    "data": {
+      "description": "数据贡献分支 — 用户添加公司/部门/职位",
+      "allowedChanges": "companies/*.md only",
+      "deployTarget": "none"
+    },
+    "main": {
+      "description": "展示分支 — 生产环境",
+      "allowedChanges": "merge only from data",
+      "deployTarget": "pages + docker"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        BRANCH: ${BRANCH:-main}
+    image: company-reputation:${BRANCH:-main}
+    ports:
+      - "${PORT:-8081}:80"

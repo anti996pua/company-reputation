@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('site.title') %></title>
+    <meta name="description" content="<%= __('site.description') %>">
+    <link rel="icon" type="image/svg+xml" href="img/project/favicon.svg">
+    <link rel="alternate icon" href="img/project/favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo"><%= __('site.title') %></a>
+            <nav>
+                <a href="index.html" data-i18n="nav.home">首页</a>
+                <a href="list.html" data-i18n="nav.search">搜索</a>
+                <a href="compare.html" data-i18n="nav.compare">🔀 对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1 data-i18n="hero.title">查公司 · 看口碑 · 避雷区</h1>
+                <p data-i18n="hero.subtitle">了解企业真实情况，找到靠谱的好公司</p>
+                <form class="hero-search" action="list.html" method="GET" onsubmit="return searchRedirect(this)">
+                    <input type="text" name="q" id="hero-query" placeholder="<%= __('hero.placeholder') %>" data-i18n="hero.placeholder" autocomplete="off">
+                    <button type="submit" data-i18n="hero.search">查询</button>
+                    <div class="search-suggest" id="search-suggest"></div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 数据统计 -->
+        <div class="site-stats">
+            <div class="stat-item"><span class="stat-number"><%= siteData.companies %></span><span class="stat-label"><%= __('section.hot').replace('热门企业', '公司') %></span></div>
+            <div class="stat-item"><span class="stat-number"><%= siteData.departments %></span><span class="stat-label">部门</span></div>
+            <div class="stat-item"><span class="stat-number"><%= siteData.positions %></span><span class="stat-label">职位</span></div>
+            <div class="stat-item"><span class="stat-number"><%= siteData.reviews %></span><span class="stat-label">评价</span></div>
+            <div class="stat-item"><span class="stat-number"><%= siteData.languages %></span><span class="stat-label">语言</span></div>
+        </div>
+
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.hot">热门企业</h2>
+            <div class="company-grid">
+                <% companies.slice(0, 8).forEach(function(c) { %>
+                <a href="c/<%= encodeURIComponent(c.name) %>.html" class="company-card">
+                    <div class="card-header">
+                        <span class="company-name"><%= c.name %></span>
+                        <% if (c.avgRating > 0) { %>
+                        <span class="rating-badge"><%= c.avgRating.toFixed(1) %></span>
+                        <% } %>
+                    </div>
+                    <div class="card-body">
+                        <span class="card-tag"><%= c.city || '' %></span>
+                        <span class="card-tag"><%= c.scale || '' %></span>
+                    </div>
+                    <div class="card-footer">
+                        <span><%= c.reviewCount %> <%= __('company.reviews') %></span>
+                        <% if (c.hasChildren) { %>
+                            <span class="dept-indicator">📂 <%= c.children.length %> <%= __('company.departments') %></span>
+                        <% } %>
+                    </div>
+                </a>
+                <% }); %>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.industry">按行业浏览</h2>
+            <div class="industry-list">
+                <% industries.forEach(function(ind) { %>
+                <a href="list.html?q=<%= encodeURIComponent(ind) %>" class="industry-tag"><%= ind %></a>
+                <% }); %>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="contribute-bar">
+        <a href="<%= basePath %>/c/贡献指南.html" class="contribute-link"><%= __('contribute.title') %></a>
+        <span class="contribute-desc"><%= __('contribute.desc') %></span>
+        <a href="<%= basePath %>/submit-review.html" class="contribute-link" style="margin-left:1rem;">💬 <%= __('section.reviewsUser') %></a>
+    </div>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+            <% if (config.repoUrl) { %>
+            <p class="footer-source"><a href="<%= config.repoUrl %>" target="_blank" rel="noopener"><img src="<%= basePath %>/img/project/icon.svg" alt="" class="footer-icon"><%= __('site.shortName') %></a></p>
+            <% } %>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+
+    (function() {
+        var input = document.getElementById('hero-query');
+        var suggest = document.getElementById('search-suggest');
+        var timer = null;
+        if (!input) return;
+        input.addEventListener('input', function() {
+            clearTimeout(timer);
+            var q = this.value.trim();
+            if (q.length < 1) { suggest.style.display = 'none'; return; }
+            timer = setTimeout(function() {
+                var results = searchCompanies(q, 8);
+                if (results.length === 0) { suggest.style.display = 'none'; return; }
+                suggest.innerHTML = results.map(function(c) {
+                    return '<a href="' + c.p + '">' +
+                           c.n + ' <small>' + (c.city || '') + ' · ' + (c.avgRating > 0 ? c.avgRating.toFixed(1) : '--') + '</small></a>';
+                }).join('');
+                suggest.style.display = 'block';
+            }, 200);
+        });
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.hero-search')) suggest.style.display = 'none';
+        });
+    })();
+
+    function searchRedirect(form) {
+        var q = form.q.value.trim();
+        if (!q) return false;
+        window.location.href = 'list.html?q=' + encodeURIComponent(q);
+        return false;
+    }
+    </script>
+</body>
+</html>

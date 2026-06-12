@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('site.title') %> - <%= __('nav.search') %></title>
+    <meta name="description" content="<%= __('site.description') %>">
+    <link rel="icon" type="image/svg+xml" href="img/project/favicon.svg">
+    <link rel="alternate icon" href="img/project/favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo"><%= __('site.title') %></a>
+            <nav>
+                <a href="index.html" data-i18n="nav.home">首页</a>
+                <a href="list.html" data-i18n="nav.search">搜索</a>
+                <a href="compare.html" data-i18n="nav.compare">🔀 对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="search-page">
+            <div class="search-bar">
+                <form onsubmit="return doSearch()">
+                    <input type="text" id="search-input" placeholder="<%= __('search.placeholder') %>" data-i18n="search.placeholder" autofocus>
+                    <button type="submit" data-i18n="hero.search">搜索</button>
+                </form>
+            </div>
+
+            <div class="search-meta" id="search-meta" style="display:none"></div>
+
+            <div class="filter-bar" id="filterBar">
+                <select id="filterIndustry" onchange="applyFilters()">
+                    <option value=""><%= __('filter.industry') %>: <%= __('filter.all') %></option>
+                </select>
+                <select id="filterCity" onchange="applyFilters()">
+                    <option value=""><%= __('filter.city') %>: <%= __('filter.all') %></option>
+                </select>
+                <select id="filterRating" onchange="applyFilters()">
+                    <option value="0"><%= __('filter.rating') %>: <%= __('filter.all') %></option>
+                    <option value="3">≥ 3.0</option>
+                    <option value="3.5">≥ 3.5</option>
+                    <option value="4">≥ 4.0</option>
+                </select>
+                <select id="filter996" onchange="applyFilters()">
+                    <option value=""><%= __('filter.is996') %>: <%= __('filter.all') %></option>
+                    <option value="1"><%= __('filter.only996') %></option>
+                    <option value="0"><%= __('filter.no996') %></option>
+                </select>
+            </div>
+
+            <div class="search-results" id="search-results"></div>
+
+            <div class="all-companies" id="all-companies">
+                <h2 class="section-title"><%= __('section.hot') %></h2>
+                <div class="company-grid" id="all-grid">
+                    <% companies.forEach(function(c) { %>
+                    <a href="c/<%= encodeURIComponent(c.name) %>.html" class="company-card">
+                        <div class="card-header">
+                            <span class="company-name"><%= c.name %></span>
+                            <% if (c.avgRating > 0) { %>
+                            <span class="rating-badge"><%= c.avgRating.toFixed(1) %></span>
+                            <% } %>
+                        </div>
+                        <div class="card-body">
+                            <span class="card-tag"><%= c.city || '' %></span>
+                            <span class="card-tag"><%= c.scale || '' %></span>
+                        </div>
+                        <div class="card-footer">
+                            <span><%= c.reviewCount %> <%= __('company.reviews') %></span>
+                            <% if (c.hasChildren) { %>
+                            <span class="dept-indicator">📂 <%= c.children.length %> <%= __('company.departments') %></span>
+                            <% } %>
+                        </div>
+                    </a>
+                    <% }); %>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="contribute-bar">
+        <a href="<%= basePath %>/c/贡献指南.html" class="contribute-link"><%= __('contribute.title') %></a>
+        <span class="contribute-desc"><%= __('contribute.desc') %></span>
+        <a href="<%= basePath %>/submit-review.html" class="contribute-link" style="margin-left:1rem;">💬 <%= __('section.reviewsUser') %></a>
+    </div>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+            <% if (config.repoUrl) { %>
+            <p class="footer-source"><a href="<%= config.repoUrl %>" target="_blank" rel="noopener"><img src="<%= basePath %>/img/project/icon.svg" alt="" class="footer-icon"><%= __('site.shortName') %></a></p>
+            <% } %>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+
+    var params = new URLSearchParams(window.location.search);
+    var initialQ = params.get('q') || '';
+    var initialTag = params.get('tag') || '';
+    var initialIndustry = params.get('industry') || '';
+    var initialCity = params.get('city') || '';
+    var initialRating = params.get('minRating') || '0';
+    var initial996 = params.get('is996') || '';
+
+    function applyFilters() {
+        var q = document.getElementById('search-input').value.trim();
+        var industry = document.getElementById('filterIndustry').value;
+        var city = document.getElementById('filterCity').value;
+        var minRating = parseFloat(document.getElementById('filterRating').value) || 0;
+        var is996 = document.getElementById('filter996').value;
+
+        var data = (typeof ALL_DATA !== 'undefined') ? ALL_DATA : (window.ALL_DATA || []);
+        var filtered = data.filter(function(c) {
+            if (c.isPosition) return false;
+            if (industry && (c.industry || '') !== industry) return false;
+            if (city && (c.city || '') !== city) return false;
+            if (minRating > 0 && (!c.avgRating || c.avgRating < minRating)) return false;
+            if (is996 === '1' && (!c.metrics || !c.metrics.is996)) return false;
+            if (is996 === '0' && c.metrics && c.metrics.is996) return false;
+            return true;
+        });
+
+        if (q) {
+            var searchResults = searchCompanies(q, 200);
+            var searchSet = {};
+            searchResults.forEach(function(r) { searchSet[r.p] = true; });
+            filtered = filtered.filter(function(c) { return searchSet[c.p]; });
+        }
+
+        renderResults(q, filtered);
+        if (q) {
+            updateURL(q, industry, city, minRating, is996);
+        }
+    }
+
+    function highlight(text, kw) {
+        if (!kw || !text) return text || '';
+        var r = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return text.replace(r, '<i class="kw">$1</i>');
+    }
+
+    function renderResults(query, data) {
+        var meta = document.getElementById('search-meta');
+        var container = document.getElementById('search-results');
+        var allSection = document.getElementById('all-companies');
+
+        if (query || data.length !== ALL_DATA.filter(function(d) { return !d.isPosition; }).length) {
+            meta.style.display = 'block';
+            if (data.length === 0) {
+                meta.innerHTML = (query ? __('search.noResults', { query: query }) : __('search.noResults', { query: '' }).replace(': ""', '')) + '. <a href="index.html">' + __('search.browseHot') + '</a>';
+                container.innerHTML = '';
+                allSection.style.display = 'block';
+                return;
+            }
+            meta.innerHTML = (query ? __('search.meta', { query: query, count: data.length.toString() }) : __('section.hot') + ' (' + data.length + ')');
+            allSection.style.display = 'none';
+        } else {
+            meta.style.display = 'none';
+            container.innerHTML = '';
+            allSection.style.display = 'block';
+            return;
+        }
+
+        container.innerHTML = data.map(function(c) {
+            var nameDisplay = c.n;
+            if (c.nameEn) nameDisplay += ' <span class="result-alias">' + c.nameEn + '</span>';
+            else if (c.nameJa) nameDisplay += ' <span class="result-alias">' + c.nameJa + '</span>';
+            var aliasText = (c.aliases && c.aliases.length > 0) ? ' (' + c.aliases.slice(0, 3).join(', ') + ')' : '';
+            var tagLinks = '';
+            if (c.tags && c.tags.length > 0) {
+                tagLinks = '<div class="result-tags-extra">' + c.tags.slice(0, 3).map(function(t) {
+                    return '<a href="list.html?tag=' + encodeURIComponent(t) + '" class="card-tag tag-filter">#' + t + '</a>';
+                }).join('') + '</div>';
+            }
+            var iconHtml = c.icon ? '<img src="' + c.icon + '" alt="" class="result-icon">' : '';
+            return '<div class="result-item-wrap">' +
+                '<a href="' + c.p + '" class="result-item' + (c.isDept ? ' result-dept' : '') + '">' +
+                '<div class="result-left">' +
+                '<div class="result-name">' + iconHtml + highlight(nameDisplay, query) + aliasText + (c.isDept ? '<span class="result-parent-badge">' + c.parent + '</span>' : '') + '</div>' +
+                '<div class="result-desc">' + highlight(c.d.slice(0, 120), query) + '</div>' +
+                '<div class="result-tags">' +
+                '<span>' + (c.city || '-') + '</span>' +
+                '<span>' + (c.scale || '-') + '</span>' +
+                '<span>' + (c.industry || '-') + '</span>' +
+                '</div></div>' +
+                '<div class="result-right">' +
+                (c.avgRating > 0 ? '<div class="result-rating">' + c.avgRating.toFixed(1) + '</div>' : '<div class="result-rating no-rating">--</div>') +
+                '</div></a>' +
+                tagLinks + '</div>';
+        }).join('');
+    }
+
+    function updateURL(q, industry, city, minRating, is996) {
+        var p = [];
+        if (q) p.push('q=' + encodeURIComponent(q));
+        if (industry) p.push('industry=' + encodeURIComponent(industry));
+        if (city) p.push('city=' + encodeURIComponent(city));
+        if (minRating > 0) p.push('minRating=' + minRating);
+        if (is996) p.push('is996=' + is996);
+        var url = 'list.html' + (p.length > 0 ? '?' + p.join('&') : '');
+        window.history.replaceState({}, '', url);
+    }
+
+    function populateFilters() {
+        var data = (typeof ALL_DATA !== 'undefined') ? ALL_DATA : (window.ALL_DATA || []);
+        var industries = {}; var cities = {};
+        data.forEach(function(c) {
+            if (c.isPosition) return;
+            if (c.industry) industries[c.industry] = true;
+            if (c.city) cities[c.city] = true;
+        });
+        var industrySel = document.getElementById('filterIndustry');
+        Object.keys(industries).sort().forEach(function(ind) {
+            var opt = document.createElement('option');
+            opt.value = ind; opt.textContent = ind;
+            if (ind === initialIndustry) opt.selected = true;
+            industrySel.appendChild(opt);
+        });
+        var citySel = document.getElementById('filterCity');
+        Object.keys(cities).sort().forEach(function(c) {
+            var opt = document.createElement('option');
+            opt.value = c; opt.textContent = c;
+            if (c === initialCity) opt.selected = true;
+            citySel.appendChild(opt);
+        });
+        document.getElementById('filterRating').value = initialRating;
+        document.getElementById('filter996').value = initial996;
+    }
+
+    function doSearch() {
+        var q = document.getElementById('search-input').value.trim();
+        if (!q) { applyFilters(); return false; }
+        var url = 'list.html?q=' + encodeURIComponent(q);
+        window.location.href = url;
+        return false;
+    }
+
+    function renderSearch(query) {
+        // Legacy wrapper - delegates to new filter system
+        document.getElementById('filterIndustry').value = '';
+        document.getElementById('filterCity').value = '';
+        document.getElementById('filterRating').value = '0';
+        document.getElementById('filter996').value = '';
+        applyFilters();
+    }
+
+    populateFilters();
+
+    if (initialTag) {
+        document.getElementById('search-input').value = '#' + initialTag;
+        applyFilters();
+    } else if (initialQ || initialIndustry || initialCity || initialRating !== '0' || initial996) {
+        document.getElementById('search-input').value = initialQ || '';
+        applyFilters();
+    }
+    </script>
+</body>
+</html>

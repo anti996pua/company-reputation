@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= company.fullName %> - <%= __('site.title') %></title>
+    <meta name="description" content="<%= __('meta.company', {company: company.fullName}) %>">
+    <link rel="icon" type="image/svg+xml" href="<%= basePath %>/img/project/favicon.svg">
+    <link rel="alternate icon" href="<%= basePath %>/img/project/favicon.ico">
+    <link rel="stylesheet" href="<%= basePath %>/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="<%= basePath %>/index.html" class="logo"><%= __('site.title') %></a>
+            <nav>
+                <a href="<%= basePath %>/index.html" data-i18n="nav.home">首页</a>
+                <a href="<%= basePath %>/list.html" data-i18n="nav.search">搜索</a>
+                <a href="<%= basePath %>/compare.html" data-i18n="nav.compare">🔀 对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <% if (company.depth > 0) { %>
+        <div class="breadcrumb">
+            <a href="<%= basePath %>/index.html"><%= __('nav.home') %></a>
+            <% for (var i = 0; i < company.pathSegments.length - 1; i++) {
+              var segs = [];
+              for (var j = 0; j <= i; j++) segs.push(encodeURIComponent(company.pathSegments[j]));
+            %>
+            <span class="breadcrumb-sep">›</span>
+            <a href="<%= basePath %>/c/<%= segs.join('/') %>.html"><%= company.pathSegments[i] %></a>
+            <% } %>
+            <span class="breadcrumb-sep">›</span>
+            <span><%= company.pathSegments[company.pathSegments.length - 1] %></span>
+        </div>
+        <% } %>
+
+        <section class="company-hero">
+            <div class="company-header">
+                <div class="company-info">
+                    <h1><img src="<%= basePath %>/<%= company.icon %>" alt="" class="company-icon"><%= company.fullName %></h1>
+                    <a href="<%= company.sourceUrl %>" target="_blank" class="source-link" title="<%= __('company.edit') %>">✏️</a>
+                    <% if (company.depth > 0) { %>
+                    <p class="dept-badge" data-i18n="company.deptOf" data-i18n-params='{"company":"<%= company.parentName %>"}'>📂 <%= company.parentName %> 下属部门</p>
+                    <% } %>
+                    <% if (company.nameEn) { %><p class="company-alias">🇬🇧 <%= company.nameEn %></p><% } %>
+                    <% if (company.nameJa) { %><p class="company-alias">🇯🇵 <%= company.nameJa %></p><% } %>
+                    <% if (company.aliases && company.aliases.length > 0) { %>
+                    <p class="company-alias"><%= __('company.alias') %>: <%= company.aliases.join(' / ') %></p>
+                    <% } %>
+                    <% if (company.tags && company.tags.length > 0) { %>
+                    <div class="tag-list">
+                        <% company.tags.forEach(function(t) { %>
+                        <a href="<%= basePath %>/list.html?tag=<%= encodeURIComponent(t) %>" class="tag-item"><%= t %></a>
+                        <% }); %>
+                    </div>
+                    <% } %>
+                    <% if (company.lastModified) { 
+                      var fd = new Date(company.lastModified);
+                      var ds = fd.getFullYear() + '-' + String(fd.getMonth()+1).padStart(2,'0') + '-' + String(fd.getDate()).padStart(2,'0');
+                    %><div class="data-freshness"><span class="freshness-label">📅 <%= ds %></span><% if (company.isOutdated) { %><span class="review-outdated">⚠️ 数据可能已过时</span><% } %></div><% } %>
+                    <div class="company-meta">
+                        <span class="meta-item">🏭 <%= company.industry || '' %></span>
+                        <span class="meta-item">📍 <%= company.city || '' %></span>
+                        <span class="meta-item">👥 <%= company.scale || '' %></span>
+                        <% if (company.establishedYear) { %><span class="meta-item">📅 <%= company.establishedYear %></span><% } %>
+                    </div>
+                    <% if (company.website) { %>
+                    <a href="<%= company.website %>" target="_blank" class="website-link">🌐 <%= __('company.website') %></a>
+                    <% } %>
+                </div>
+                <div class="company-rating-large">
+                    <% if (company.avgRating > 0) { %>
+                    <div class="rating-circle"><%= company.avgRating.toFixed(1) %></div>
+                    <div class="rating-label"><%= company.reviewCount %> <%= __('company.reviews') %></div>
+                    <% } else { %>
+                    <div class="rating-circle no-data">--</div>
+                    <div class="rating-label"><%= __('company.noRating') %></div>
+                    <% } %>
+                    <a href="<%= basePath %>/compare.html?q=<%= encodeURIComponent(company.fullName) %>" class="compare-btn" title="<%= __('compare.addToCompare') %>">🔀 <%= __('compare.addToCompare') %></a>
+                </div>
+            </div>
+        </section>
+
+        <% if (company.images && company.images.length > 0) { %>
+        <section class="section images-section">
+            <h2 class="section-title"><%= __(company.depth > 0 ? 'section.images.department' : 'section.images.company') %></h2>
+            <div class="image-gallery">
+                <% company.images.forEach(function(img) { %>
+                <img src="<%= company.entityImgBase %><%= img %>" alt="" class="entity-image" loading="lazy">
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (company.hasChildren) { %>
+        <section class="section departments-section">
+            <h2 class="section-title"><%= __('section.departments') %></h2>
+            <div class="dept-grid">
+                <% company.children.forEach(function(d) { %>
+                <div class="dept-card">
+                    <a href="<%= basePath %>/c/<%= company.pathSegments.map(s => encodeURIComponent(s)).join('/') %>/<%= encodeURIComponent(d.name) %>.html" class="dept-card-link">
+                        <div class="dept-card-header">
+                            <span class="dept-name"><%= d.name %></span>
+                            <% if (d.avgRating > 0) { %>
+                            <span class="rating-badge"><%= d.avgRating.toFixed(1) %></span>
+                            <% } %>
+                        </div>
+                        <% if (d.description) { %>
+                        <div class="dept-desc"><%= d.description.slice(0, 100) %></div>
+                        <% } %>
+                        <div class="dept-meta">
+                            <span><%= d.city ? d.city.split('/')[0] : '' %></span>
+                            <span><%= d.scale || '' %></span>
+                        </div>
+                    </a>
+                    <a href="<%= d.sourceUrl %>" target="_blank" class="dept-card-source" title="<%= __('company.edit') %>">✏️</a>
+                </div>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (company.positions && company.positions.length > 0) { %>
+        <section class="section positions-section">
+            <h2 class="section-title" data-i18n="section.positions">💼 招聘职位</h2>
+            <div class="position-summary-grid">
+                <% company.positions.forEach(function(p) { %>
+                <a href="<%= basePath %>/c/<%= p.pathSegments.map(s => encodeURIComponent(s)).join('/') %>.html" class="position-card">
+                    <span class="position-card-cat"><%= p.positionCategory %></span>
+                    <div class="position-card-name"><%= p.fullName %></div>
+                    <div class="position-card-info">
+                        <span>📊 <%= p.levelRange %></span>
+                        <% if (p.workLocation) { %><span>📍 <%= p.workLocation.split('/')[0] %></span><% } %>
+                    </div>
+                </a>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (company.reviews && company.reviews.length > 0) { %>
+        <section class="section reviews-user-section">
+            <h2 class="section-title" data-i18n="section.reviewsUser">💬 员工评价</h2>
+            <div class="reviews-list">
+                <% company.reviews.forEach(function(r) { %>
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="review-meta">
+                            <% if (r.author) { %><span class="review-author"><%= r.author %></span><% } %>
+                            <% if (r.role) { %><span><%= r.role %></span><% } %>
+                            <% if (r.experience) { %><span>· <%= r.experience %></span><% } %>
+                            <% if (r.date) { %>
+                            <span>· <%= r.date %></span>
+                            <% 
+                              var oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                              var reviewDate = new Date(r.date);
+                              if (!isNaN(reviewDate.getTime()) && reviewDate < oneYearAgo) { 
+                            %><span class="review-outdated">⚠ 已过时</span><% } %>
+                            <% } %>
+                        </div>
+                        <% if (r.rating > 0) { %>
+                        <div class="review-rating"><%= r.rating.toFixed(1) %></div>
+                        <% } %>
+                    </div>
+                    <% if (r.comment) { %>
+                    <blockquote class="review-comment"><%= r.comment %></blockquote>
+                    <% } %>
+                    <% if (r.pros || r.cons) { %>
+                    <div class="review-detail">
+                        <% if (r.pros) { %>
+                        <div class="review-detail-block pros">
+                            <strong data-i18n="review.pros">✅ 优点</strong>
+                            <%= r.pros %>
+                        </div>
+                        <% } %>
+                        <% if (r.cons) { %>
+                        <div class="review-detail-block cons">
+                            <strong data-i18n="review.cons">❌ 缺点</strong>
+                            <%= r.cons %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </div>
+                <% }); %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (company.avgRating > 0) { %>
+        <% var metrics = company.metrics; %>
+        <section class="section metrics-section">
+            <h2 class="section-title"><%= __('section.metrics') %></h2>
+
+            <% if (metrics.is996) { %>
+            <div class="alert alert-warning">⚠️ <strong><%= __('metric.is996') %></strong></div>
+            <% } %>
+
+            <div class="metrics-grid">
+                <% var metricList = [
+                    {key:'workIntensity', label: __('metric.workIntensity'), fill: metrics.workIntensity, good: false},
+                    {key:'overtimeFreq', label: __('metric.overtimeFreq'), fill: metrics.overtimeFreq, good: false},
+                    {key:'salaryLevel', label: __('metric.salaryLevel'), fill: metrics.salaryLevel, good: true},
+                    {key:'benefitsScore', label: __('metric.benefitsScore'), fill: metrics.benefitsScore, good: true},
+                    {key:'wlbScore', label: __('metric.wlbScore'), fill: metrics.wlbScore, good: true},
+                    {key:'careerGrowth', label: __('metric.careerGrowth'), fill: metrics.careerGrowth, good: true},
+                    {key:'workEnv', label: __('metric.workEnv'), fill: metrics.workEnv, good: true},
+                    {key:'cultureScore', label: __('metric.cultureScore'), fill: metrics.cultureScore, good: true},
+                ];
+                metricList.forEach(function(m) { %>
+                <div class="metric-card">
+                    <div class="metric-label"><%= m.label %></div>
+                    <div class="metric-bar"><div class="metric-fill<%= m.good ? ' fill-good' : '' %>" style="width: <%= m.fill * 20 %>%"></div></div>
+                    <div class="metric-value"><%= m.fill.toFixed(1) %>/5</div>
+                </div>
+                <% }); %>
+            </div>
+
+            <div class="metrics-desc">
+                <% if (metrics.overtimeDesc) { %>
+                <div class="desc-block">
+                    <h3>⏰ <%= __('metric.overtime') %></h3>
+                    <p><%= metrics.overtimeDesc %></p>
+                </div>
+                <% } %>
+                <% if (metrics.benefitsDesc) { %>
+                <div class="desc-block">
+                    <h3>🎁 <%= __('metric.benefits') %></h3>
+                    <p><%= metrics.benefitsDesc %></p>
+                </div>
+                <% } %>
+                <% if (metrics.cultureDesc) { %>
+                <div class="desc-block">
+                    <h3>🏢 <%= __('metric.culture') %></h3>
+                    <p><%= metrics.cultureDesc %></p>
+                </div>
+                <% } %>
+                <% if (metrics.pros) { %>
+                <div class="desc-block pros">
+                    <h3>✅ <%= __('metric.pros') %></h3>
+                    <p><%= metrics.pros %></p>
+                </div>
+                <% } %>
+                <% if (metrics.cons) { %>
+                <div class="desc-block cons">
+                    <h3>❌ <%= __('metric.cons') %></h3>
+                    <p><%= metrics.cons %></p>
+                </div>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
+
+        <% if (company.description) { %>
+        <section class="section">
+            <h2 class="section-title" data-i18n="section.profile">公司简介</h2>
+            <div class="content-block"><p><%= company.description %></p></div>
+        </section>
+        <% } %>
+
+        <% if (config.giscus && config.giscus.repo) { %>
+        <section class="section giscus-section">
+            <h2 class="section-title" data-i18n="section.comments">💬 讨论区</h2>
+            <div class="giscus"><p class="giscus-loading" data-i18n="giscus.loading"></p></div>
+            <script>
+            (function() {
+              var gl = localStorage.getItem('company-lang');
+              if (!gl) {
+                var b = (navigator.language || navigator.browserLanguage || '').toLowerCase();
+                if (b === 'zh-tw' || b === 'zh-hk' || b === 'zh-mo') gl = 'zh-TW';
+                else if (b.indexOf('zh') === 0) gl = 'zh-CN';
+                else if (b.indexOf('en') === 0) gl = 'en';
+                else if (b.indexOf('ja') === 0) gl = 'ja';
+                else if (b.indexOf('ko') === 0) gl = 'ko';
+                else if (b.indexOf('fr') === 0) gl = 'fr';
+                else if (b.indexOf('de') === 0) gl = 'de';
+                else if (b.indexOf('es') === 0) gl = 'es';
+                else if (b.indexOf('pt') === 0) gl = 'pt';
+                else if (b.indexOf('ru') === 0) gl = 'ru';
+                else gl = 'zh-CN';
+              }
+              var gt = localStorage.getItem('company-theme');
+              if (!gt) gt = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+              var s = document.createElement('script');
+              s.src = 'https://giscus.app/client.js';
+              s.setAttribute('data-repo', '<%= config.giscus.repo %>');
+              s.setAttribute('data-repo-id', '<%= config.giscus.repoId %>');
+              s.setAttribute('data-category', '<%= config.giscus.category %>');
+              s.setAttribute('data-category-id', '<%= config.giscus.categoryId %>');
+              s.setAttribute('data-mapping', 'pathname');
+              s.setAttribute('data-strict', '0');
+              s.setAttribute('data-reactions-enabled', '1');
+              s.setAttribute('data-emit-metadata', '0');
+              s.setAttribute('data-input-position', 'bottom');
+              s.setAttribute('data-theme', gt);
+              s.setAttribute('data-lang', gl);
+              s.setAttribute('crossorigin', 'anonymous');
+              s.async = true;
+              document.querySelector('.giscus').appendChild(s);
+            })();
+            </script>
+        </section>
+        <% } %>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+            <% if (config.repoUrl) { %>
+            <p class="footer-source"><a href="<%= config.repoUrl %>" target="_blank" rel="noopener"><img src="<%= basePath %>/img/project/icon.svg" alt="" class="footer-icon"><%= __('site.shortName') %></a></p>
+            <% } %>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="contribute-bar">
+        <a href="<%= basePath %>/c/贡献指南.html" class="contribute-link"><%= __('contribute.title') %></a>
+        <span class="contribute-desc"><%= __('contribute.desc') %></span>
+        <a href="<%= basePath %>/submit-review.html" class="contribute-link" style="margin-left:1rem;">💬 <%= __('section.reviewsUser') %></a>
+    </div>
+
+    <script src="<%= basePath %>/js/data.js"></script>
+    <script src="<%= basePath %>/js/i18n.js"></script>
+    <script src="<%= basePath %>/js/main.js"></script>
+    <script>
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+    </script>
+</body>
+</html>

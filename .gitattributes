@@ -1,0 +1,18 @@
+# Auto-detect text files and set line endings
+* text=auto eol=lf
+
+# Source files
+*.mjs text
+*.js text
+*.ejs text
+*.css text
+*.json text
+*.md text
+*.svg text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

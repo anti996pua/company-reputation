@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= __('site.title') %> — <%= __('section.reviewsUser') %></title>
+    <meta name="description" content="<%= __('site.description') %>">
+    <link rel="icon" type="image/svg+xml" href="img/project/favicon.svg">
+    <link rel="alternate icon" href="img/project/favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo"><%= __('site.shortName') %></a>
+            <nav>
+                <a href="index.html" data-i18n="nav.home">首页</a>
+                <a href="list.html" data-i18n="nav.search">搜索</a>
+                <a href="compare.html" data-i18n="nav.compare">对比</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="<%= __('nav.darkMode') %>">🌙</button>
+                <span class="lang-selector">
+                    <select onchange="switchLang(this.value)" id="langSelect">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="page-title"><%= __('section.reviewsUser') %></h1>
+        <p class="review-intro">填写后生成 Markdown 格式，复制粘贴到对应公司页面的「员工评价」区即可提交。</p>
+
+        <div class="privacy-notice">
+            <strong>🔒 隐私提醒：</strong>请勿填写真实姓名、手机号、工号、邮箱等个人信息。评价内容默认为匿名，不会关联你的 GitHub 账号。提交前请检查内容是否可能暴露你的身份或公司敏感信息。
+            <a href="<%= basePath %>/c/贡献指南.html" style="display:inline-block;margin-top:6px;color:var(--color-primary);text-decoration:underline;">📖 查看完整贡献指南 →</a>
+        </div>
+
+        <div class="review-form" id="reviewForm">
+            <div class="form-group">
+                <label><%= __('company.alias') %></label>
+                <input type="text" id="formCompany" list="companyList" placeholder="输入公司名称搜索..." autocomplete="off">
+                <datalist id="companyList"></datalist>
+            </div>
+
+            <div class="form-group">
+                <label><%= __('position.dept') %></label>
+                <input type="text" id="formDept" placeholder="可选，如：终端业务部">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><%= __('position.category') %></label>
+                    <input type="text" id="formRole" placeholder="如：高级工程师">
+                </div>
+                <div class="form-group">
+                    <label><%= __('section.requirements') %></label>
+                    <input type="text" id="formExperience" placeholder="如：3 年">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><%= __('compare.label.overallRating') %></label>
+                <div class="star-rating" id="starRating">
+                    <% for (var i = 1; i <= 5; i++) { %><span class="star" data-val="<%= i %>">☆</span><% } %>
+                    <span class="star-value" id="starValue">0/5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><%= __('review.pros') %></label>
+                <textarea id="formPros" rows="3" placeholder="输入优点，一行一个"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label><%= __('review.cons') %></label>
+                <textarea id="formCons" rows="3" placeholder="输入缺点，一行一个"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label><%= __('company.comments') %></label>
+                <textarea id="formComment" rows="4" placeholder="补充说明或引言（可选）"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="formAnonymous" checked>
+                    匿名提交
+                </label>
+            </div>
+
+            <button class="btn btn-primary" onclick="generateReview()">生成 Markdown</button>
+        </div>
+
+        <div class="review-output" id="reviewOutput" style="display:none;">
+            <h3>复制以下内容到公司页面</h3>
+            <p style="font-size:0.85rem;color:var(--color-muted);">
+                打开公司页 → 点击 ✏️ 编辑 → 粘贴到「员工评价」区 → 提交 PR
+            </p>
+            <pre id="markdownOutput" class="code-block"></pre>
+            <button class="btn btn-secondary" onclick="copyMarkdown()">📋 复制</button>
+            <button class="btn" onclick="resetForm()" style="margin-left:8px;">继续填写</button>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <p data-i18n="site.footer"><%= __('site.title') %></p>
+            <p class="footer-meta" data-i18n="site.footerMeta">数据来源于用户贡献，仅供参考 | 免责声明</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/i18n.js"></script>
+    <script>
+    // Populate company datalist
+    var data = (typeof ALL_DATA !== 'undefined') ? ALL_DATA : (window.ALL_DATA || []);
+    var companies = data.filter(function(d) { return !d.isDept && !d.isPosition; });
+    var datalist = document.getElementById('companyList');
+    companies.forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c.fullName || c.n;
+        datalist.appendChild(opt);
+    });
+
+    // Star rating
+    var stars = document.querySelectorAll('.star');
+    var starValue = document.getElementById('starValue');
+    var currentRating = 0;
+    function updateStars() {
+        stars.forEach(function(st, idx) {
+            if (idx < currentRating) { st.textContent = '★'; st.classList.add('rated'); }
+            else { st.textContent = '☆'; st.classList.remove('rated'); }
+        });
+        starValue.textContent = currentRating > 0 ? currentRating + '/5' : '';
+    }
+    stars.forEach(function(s) {
+        s.addEventListener('click', function() {
+            currentRating = parseInt(this.getAttribute('data-val'));
+            updateStars();
+        });
+        s.addEventListener('mouseenter', function() {
+            var val = parseInt(this.getAttribute('data-val'));
+            stars.forEach(function(st, idx) {
+                st.textContent = idx < val ? '★' : '☆';
+            });
+        });
+        s.addEventListener('mouseleave', function() { updateStars(); });
+    });
+
+    function generateReview() {
+        var company = document.getElementById('formCompany').value.trim();
+        var dept = document.getElementById('formDept').value.trim();
+        var role = document.getElementById('formRole').value.trim();
+        var experience = document.getElementById('formExperience').value.trim();
+        var pros = document.getElementById('formPros').value.trim();
+        var cons = document.getElementById('formCons').value.trim();
+        var comment = document.getElementById('formComment').value.trim();
+        var anonymous = document.getElementById('formAnonymous').checked;
+
+        if (!company) { alert('请选择公司'); return; }
+        if (!role) { alert('请输入你的角色'); return; }
+        if (currentRating === 0) { alert('请评分'); return; }
+
+        var today = new Date().toISOString().slice(0, 10);
+        var author = anonymous ? '' : prompt('你的名字/昵称（留空则匿名）:', '') || '匿名';
+        var md = '';
+
+        // Find the target company for edit link
+        var target = data.find(function(d) { return (d.fullName === company || d.n === company) && !d.isDept && !d.isPosition; });
+        var md = '### ' + today + ' | ' + role + ' | ' + (experience || 'N 年') + ' | @' + author + '\n';
+        if (comment) {
+            md += '\n> ' + comment + '\n';
+        }
+        md += '\n评分：' + currentRating + '/5\n';
+        if (pros) {
+            md += '\n**优点**\n' + pros.split('\n').filter(Boolean).map(function(l) { return l; }).join('\n') + '\n';
+        }
+        if (cons) {
+            md += '\n**缺点**\n' + cons.split('\n').filter(Boolean).map(function(l) { return l; }).join('\n') + '\n';
+        }
+
+        document.getElementById('reviewForm').style.display = 'none';
+        document.getElementById('markdownOutput').textContent = md;
+        document.getElementById('reviewOutput').style.display = 'block';
+        if (target && target.p) {
+            var editMsg = '\n\n→ 提交方法：打开 ' + target.p + ' → 点击 ✏️ 编辑 → 粘贴到「员工评价」区 → 提 PR';
+            document.getElementById('markdownOutput').textContent += editMsg;
+        }
+    }
+
+    function copyMarkdown() {
+        var text = document.getElementById('markdownOutput').textContent;
+        // Remove the edit instructions from copy
+        var md = text.split('\n\n→ 提交方法：')[0];
+        navigator.clipboard.writeText(md).then(function() {
+            alert('✅ 已复制！');
+        }).catch(function() {
+            // Fallback
+            var ta = document.createElement('textarea');
+            ta.value = md;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('✅ 已复制！');
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('reviewForm').style.display = 'block';
+        document.getElementById('reviewOutput').style.display = 'none';
+        document.getElementById('formDept').value = '';
+        document.getElementById('formRole').value = '';
+        document.getElementById('formExperience').value = '';
+        document.getElementById('formPros').value = '';
+        document.getElementById('formCons').value = '';
+        document.getElementById('formComment').value = '';
+        currentRating = 0;
+        stars.forEach(function(s) { s.textContent = '☆'; });
+        starValue.textContent = '0/5';
+    }
+
+    var savedLang = localStorage.getItem('company-lang');
+    if (savedLang) { document.getElementById('langSelect').value = savedLang; switchLang(savedLang); }
+    </script>
+</body>
+</html>
